@@ -352,11 +352,11 @@ function! chat#qq#OpenMsgWin() abort
                 let s:c_char = matchstr(s:c_begin, '.$')
                 let s:c_begin = substitute(s:c_begin, '.$', '', 'g')
             endif
-        elseif nr ==# "\<Home>" || nr == 1                                     "<Home> 将光标移动到行首
+        elseif nr ==# "\<Home>" || nr == 1                                     "<Home> 或 <ctrl> + a 将光标移动到行首
             let s:c_end = substitute(s:c_begin . s:c_char . s:c_end, '^.', '', 'g')
             let s:c_char = matchstr(s:c_begin, '^.')
             let s:c_begin = ''
-        elseif nr ==# "\<End>"  || nr == 5                                     "<End> 将光标移动到行末
+        elseif nr ==# "\<End>"  || nr == 5                                     "<End> 或 <ctrl> + e 将光标移动到行末
             let s:c_begin = s:c_begin . s:c_char . s:c_end
             let s:c_char = ''
             let s:c_end = ''

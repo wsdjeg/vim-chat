@@ -1,3 +1,4 @@
+scriptencoding utf-8
 let s:server_lib = get(g:, 'chatting_server_lib', expand('~/sources/Chatting/target/Chatting-1.0-SNAPSHOT.jar'))
 let s:server_job_id = 0
 let s:client_job_id = 0
@@ -34,15 +35,18 @@ function! s:client_handler(id, data, event) abort
     if a:event ==# 'stdout'
         call s:push_message(a:data)
         call s:update_msg_screen()
+    elseif a:event ==# 'exit'
+        let s:client_job_id = 0
     else
         echon a:data
     endif
 endfunction
 
-function! chat#chatting#login(name, pw) abort
+function! s:start_client() abort
     if s:client_job_id == 0
         let s:client_job_id = jobstart(['java', '-cp', s:server_lib, 'com.wsdjeg.chat.Client', s:server_ip, s:server_port],{
-                    \ 'on_stdout' : function('s:client_handler')
+                    \ 'on_stdout' : function('s:client_handler'),
+                    \ 'on_exit' : function('s:client_handler')
                     \ })
     endif
 endfunction
@@ -54,6 +58,7 @@ let s:c_char = ''
 let s:c_end = ''
 let s:msg_win_opened = 0
 function! chat#chatting#OpenMsgWin() abort
+    call s:start_client()
     if bufwinnr(s:name) < 0
         if bufnr(s:name) != -1
             exe 'silent! botright split ' . '+b' . bufnr(s:name)
@@ -65,17 +70,40 @@ function! chat#chatting#OpenMsgWin() abort
     endif
     call s:windowsinit()
     setl modifiable
-    call s:echon()
     let s:msg_win_opened = 1
-    while get(g:, 'quit_chating_win', 0) == 0
+    call s:update_msg_screen()
+    call s:echon()
+    while get(s:, 'quit_chating_win', 0) == 0
         let nr = getchar()
         if nr == 13
-            call jobsend(s:client_job_id, [s:c_begin . s:c_char . s:c_end, ''])
-	    let s:c_end = ''
-	    let s:c_char = ''
-	    let s:c_begin = ''
+            if s:client_job_id != 0
+                call jobsend(s:client_job_id, [s:c_begin . s:c_char . s:c_end, ''])
+            endif
+        let s:c_end = ''
+        let s:c_char = ''
+        let s:c_begin = ''
+        elseif nr ==# "\<Right>" || nr == 6                                     "<Right> 向右移动光标
+            let s:c_begin = s:c_begin . s:c_char
+            let s:c_char = matchstr(s:c_end, '^.')
+            let s:c_end = substitute(s:c_end, '^.', '', 'g')
+        elseif nr ==# "\<Left>"  || nr == 2                                     "<Left> 向左移动光标
+            if s:c_begin !=# ''
+                let s:c_end = s:c_char . s:c_end
+                let s:c_char = matchstr(s:c_begin, '.$')
+                let s:c_begin = substitute(s:c_begin, '.$', '', 'g')
+            endif
+        elseif nr ==# "\<Home>" || nr == 1                                     "<Home> 或 <ctrl> + a 将光标移动到行首
+            let s:c_end = substitute(s:c_begin . s:c_char . s:c_end, '^.', '', 'g')
+            let s:c_char = matchstr(s:c_begin, '^.')
+            let s:c_begin = ''
+        elseif nr ==# "\<End>"  || nr == 5                                     "<End> 或 <ctrl> + e 将光标移动到行末
+            let s:c_begin = s:c_begin . s:c_char . s:c_end
+            let s:c_char = ''
+            let s:c_end = ''
         elseif nr ==# "\<M-x>"
-            let g:quit_chating_win = 1
+            let s:quit_chating_win = 1
+        elseif nr == 8 || nr ==# "\<bs>"                                        " ctrl+h or <bs> delete last char
+            let s:c_begin = substitute(s:c_begin,'.$','','g')
         else
             let s:c_begin .= nr2char(nr)
         endif
@@ -83,7 +111,7 @@ function! chat#chatting#OpenMsgWin() abort
     endwhile
     setl nomodifiable
     exe 'bd ' . bufnr(s:name)
-    let s:quit_qq_win = 0
+    let s:quit_chating_win = 0
     let s:msg_win_opened = 0
     normal! :
 endfunction
@@ -97,9 +125,9 @@ function! s:update_msg_screen() abort
         normal! gg
         delete
         normal! G
+        redraw
+        call s:echon()
     endif
-    redraw
-    call s:echon()
 endfunction
 
 function! s:echon() abort
