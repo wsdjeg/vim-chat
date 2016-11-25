@@ -1,12 +1,19 @@
 # vim-chat
 chat in vim, (WIP)
 
+# Install
+1. Install [mojo-webqq](https://github.com/sjdy521/Mojo-Webqq) and [mojo-weixin](https://github.com/sjdy521/Mojo-Weixin)
+2. Install current plugin.
+```viml
+call dein#add('wsdjeg/vim-chat')
+```
+
 # support
-1. weixin and qq
+- weixin and qq
 
 ![qq](https://raw.githubusercontent.com/wsdjeg/DotFiles/master/pic/Vim-QQ.png)
 
-3. Chatting
+- Chatting
 
 now you can chat with me, just need add this to your vimrc; download [chatting.jar](https://github.com/wsdjeg/Chatting/files/603505/Chatting.zip)
 
