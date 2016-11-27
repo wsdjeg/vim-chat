@@ -1,5 +1,5 @@
 scriptencoding utf-8
-let s:server_lib = get(g:, 'chatting_server_lib', expand('~/sources/Chatting/target/Chatting-1.0-SNAPSHOT.jar'))
+let s:server_lib = get(g:, 'chatting_server_lib', fnamemodify('~/sources/Chatting/target/Chatting-1.0-SNAPSHOT.jar', ':p'))
 let s:server_job_id = 0
 let s:client_job_id = 0
 let s:debug_log = []
