@@ -49,6 +49,7 @@ function! s:start_client() abort
                     \ 'on_stdout' : function('s:client_handler'),
                     \ 'on_exit' : function('s:client_handler')
                     \ })
+        call s:log('Server_lib:' . s:server_lib)
         call s:log('Client startting with server ip(' . s:server_ip . ') port(' . s:server_port . ')')
     endif
 endfunction
