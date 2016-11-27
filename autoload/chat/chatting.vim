@@ -2,6 +2,7 @@ scriptencoding utf-8
 let s:server_lib = get(g:, 'chatting_server_lib', expand('~/sources/Chatting/target/Chatting-1.0-SNAPSHOT.jar'))
 let s:server_job_id = 0
 let s:client_job_id = 0
+let s:debug_log = []
 let s:server_ip = get(g:, 'chatting_server_ip', '127.0.0.1')
 let s:server_port = get(g:, 'chatting_server_port', 2013)
 let s:messages = []
@@ -22,6 +23,7 @@ endfunction
 
 function! chat#chatting#start() abort
     if s:server_job_id == 0
+        call s:log('startting server, server_lib is ' . s:server_lib . '(' . (empty(glob(s:server_lib)) ? 'no such file' : 'file exists' ). ')')
         let s:server_job_id = jobstart(['java', '-cp', s:server_lib, 'com.wsdjeg.chat.Server'],{
                     \ 'on_stdout' : function('s:server_handler'),
                     \ })
@@ -36,9 +38,8 @@ function! s:client_handler(id, data, event) abort
         call s:push_message(a:data)
         call s:update_msg_screen()
     elseif a:event ==# 'exit'
+        call s:log('client exit with code:' . a:data)
         let s:client_job_id = 0
-    else
-        echon a:data
     endif
 endfunction
 
@@ -48,6 +49,7 @@ function! s:start_client() abort
                     \ 'on_stdout' : function('s:client_handler'),
                     \ 'on_exit' : function('s:client_handler')
                     \ })
+        call s:log('Client startting with server ip(' . s:server_ip . ') port(' . s:server_port . ')')
     endif
 endfunction
 
@@ -159,6 +161,19 @@ fu! s:windowsinit() abort
     setl nofoldenable
 endf
 
-function! Test(str) abort
-    exe a:str
+function! s:log(msg) abort
+    let time = strftime('%H:%M:%S')
+    let msg = '[' . time . '] ' . string(a:msg)
+    call add(s:debug_log, msg)
 endfunction
+
+function! s:debug() abort
+    tabnew
+    for line in s:debug_log
+        call append(line('$'), line)
+    endfor
+    nnoremap <buffer><silent> q :bd!<CR>
+endfunction
+
+call chat#debug#defind('chatting', function('s:debug'))
+
