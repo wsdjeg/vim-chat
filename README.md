@@ -1,5 +1,6 @@
 # vim-chat
-chat in vim, (WIP)
+chat in neovim and vim8, for vim8 support you need install [job.vim](https://github.com/wsdjeg/job.vim)
+
 
 # Install
 1. Install [mojo-webqq](https://github.com/sjdy521/Mojo-Webqq) and [mojo-weixin](https://github.com/sjdy521/Mojo-Weixin)
