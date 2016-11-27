@@ -24,9 +24,15 @@ endfunction
 function! chat#chatting#start() abort
     if s:server_job_id == 0
         call s:log('startting server, server_lib is ' . s:server_lib . '(' . (empty(glob(s:server_lib)) ? 'no such file' : 'file exists' ). ')')
-        let s:server_job_id = jobstart(['java', '-cp', s:server_lib, 'com.wsdjeg.chat.Server'],{
-                    \ 'on_stdout' : function('s:server_handler'),
-                    \ })
+        if has('nvim')
+            let s:server_job_id = jobstart(['java', '-cp', s:server_lib, 'com.wsdjeg.chat.Server'],{
+                        \ 'on_stdout' : function('s:server_handler'),
+                        \ })
+        elseif exists('*job#start') && !has('nvim')
+            let s:server_job_id = job#start(['java', '-cp', s:server_lib, 'com.wsdjeg.chat.Server'],{
+                        \ 'on_stdout' : function('s:server_handler'),
+                        \ })
+        endif
     endif
 endfunction
 
@@ -45,10 +51,18 @@ endfunction
 
 function! s:start_client() abort
     if s:client_job_id == 0
-        let s:client_job_id = jobstart(['java', '-cp', s:server_lib, 'com.wsdjeg.chat.Client', s:server_ip, s:server_port],{
-                    \ 'on_stdout' : function('s:client_handler'),
-                    \ 'on_exit' : function('s:client_handler')
-                    \ })
+        if has('nvim')
+            let s:client_job_id = jobstart(['java', '-cp', s:server_lib, 'com.wsdjeg.chat.Client', s:server_ip, s:server_port],{
+                        \ 'on_stdout' : function('s:client_handler'),
+                        \ 'on_exit' : function('s:client_handler')
+                        \ })
+
+        elseif exists('*job#start') && !has('nvim')
+            let s:client_job_id = job#start(['java', '-cp', s:server_lib, 'com.wsdjeg.chat.Client', s:server_ip, s:server_port],{
+                        \ 'on_stdout' : function('s:client_handler'),
+                        \ 'on_exit' : function('s:client_handler')
+                        \ })
+        endif
         call s:log('Server_lib:' . s:server_lib)
         call s:log('Client startting with server ip(' . s:server_ip . ') port(' . s:server_port . ')')
     endif
@@ -176,7 +190,11 @@ function! s:enter() abort
         call s:start_client()
     endif
     if s:client_job_id != 0
-        call jobsend(s:client_job_id, [s:c_begin . s:c_char . s:c_end, ''])
+        if has('nvim')
+            call jobsend(s:client_job_id, [s:c_begin . s:c_char . s:c_end, ''])
+        elseif exists('*job#start') && !has('nvim')
+            call job#send(s:client_job_id, [s:c_begin . s:c_char . s:c_end, ''])
+        endif
     endif
     let s:c_end = ''
     let s:c_char = ''
