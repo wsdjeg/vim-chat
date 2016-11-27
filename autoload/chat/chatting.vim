@@ -186,6 +186,13 @@ function! s:debug() abort
 endfunction
 
 function! s:enter() abort
+    if s:c_begin . s:c_char . s:c_end ==# '/quit'
+        let s:quit_chating_win = 1
+        let s:c_end = ''
+        let s:c_char = ''
+        let s:c_begin = ''
+        return
+    endif
     if s:client_job_id == 0
         call s:start_client()
     endif
@@ -193,7 +200,7 @@ function! s:enter() abort
         if has('nvim')
             call jobsend(s:client_job_id, [s:c_begin . s:c_char . s:c_end, ''])
         elseif exists('*job#start') && !has('nvim')
-            call job#send(s:client_job_id, [s:c_begin . s:c_char . s:c_end, ''])
+            call job#send(s:client_job_id, s:c_begin . s:c_char . s:c_end)
         endif
     endif
     let s:c_end = ''
