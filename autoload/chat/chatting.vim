@@ -3,7 +3,7 @@ let s:server_lib = get(g:, 'chatting_server_lib', fnamemodify('~/sources/Chattin
 let s:server_job_id = 0
 let s:client_job_id = 0
 let s:debug_log = []
-let s:server_ip = get(g:, 'chatting_server_ip', '127.0.0.1')
+let s:server_ip = get(g:, 'chatting_server_ip', 'perfi.wang')
 let s:server_port = get(g:, 'chatting_server_port', 2013)
 let s:messages = []
 
@@ -79,12 +79,7 @@ function! chat#chatting#OpenMsgWin() abort
     while get(s:, 'quit_chating_win', 0) == 0
         let nr = getchar()
         if nr == 13
-            if s:client_job_id != 0
-                call jobsend(s:client_job_id, [s:c_begin . s:c_char . s:c_end, ''])
-            endif
-        let s:c_end = ''
-        let s:c_char = ''
-        let s:c_begin = ''
+            call s:enter()
         elseif nr ==# "\<Right>" || nr == 6                                     "<Right> 向右移动光标
             let s:c_begin = s:c_begin . s:c_char
             let s:c_char = matchstr(s:c_end, '^.')
@@ -174,6 +169,18 @@ function! s:debug() abort
         call append(line('$'), line)
     endfor
     nnoremap <buffer><silent> q :bd!<CR>
+endfunction
+
+function! s:enter() abort
+    if s:client_job_id == 0
+        call s:start_client()
+    endif
+    if s:client_job_id != 0
+        call jobsend(s:client_job_id, [s:c_begin . s:c_char . s:c_end, ''])
+    endif
+    let s:c_end = ''
+    let s:c_char = ''
+    let s:c_begin = ''
 endfunction
 
 call chat#debug#defind('chatting', function('s:debug'))
