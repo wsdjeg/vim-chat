@@ -5,6 +5,7 @@ let s:client_job_id = 0
 let s:debug_log = []
 let s:server_ip = get(g:, 'chatting_server_ip', 'perfi.wang')
 let s:server_port = get(g:, 'chatting_server_port', 2013)
+let s:close_windows_char = get(g:, 'chatting_close_win_char',"\<M-c>")
 let s:messages = []
 
 function! s:push_message(msg) abort
@@ -112,7 +113,7 @@ function! chat#chatting#OpenMsgWin() abort
             let s:c_begin = s:c_begin . s:c_char . s:c_end
             let s:c_char = ''
             let s:c_end = ''
-        elseif nr ==# "\<M-x>"
+        elseif nr ==# s:close_windows_char
             let s:quit_chating_win = 1
         elseif nr == 8 || nr ==# "\<bs>"                                        " ctrl+h or <bs> delete last char
             let s:c_begin = substitute(s:c_begin,'.$','','g')
