@@ -50,23 +50,25 @@ function! s:client_handler(id, data, event) abort
     endif
 endfunction
 
+function! s:ch_callbakc(ch, msg) abort
+    call s:push_message(a:msg)
+    call s:update_msg_screen()
+endfunction
+
 function! s:start_client() abort
-    if s:client_job_id == 0
-        if has('nvim')
+    if has('nvim')
+        if s:client_job_id == 0
             let s:client_job_id = jobstart(['java', '-cp', s:server_lib, 'com.wsdjeg.chat.Client', s:server_ip, s:server_port],{
                         \ 'on_stdout' : function('s:client_handler'),
                         \ 'on_exit' : function('s:client_handler')
                         \ })
-
-        elseif exists('*job#start') && !has('nvim')
-            let s:client_job_id = job#start(['java', '-cp', s:server_lib, 'com.wsdjeg.chat.Client', s:server_ip, s:server_port],{
-                        \ 'on_stdout' : function('s:client_handler'),
-                        \ 'on_exit' : function('s:client_handler')
-                        \ })
+            call s:log('Server_lib:' . s:server_lib)
         endif
-        call s:log('Server_lib:' . s:server_lib)
-        call s:log('Client startting with server ip(' . s:server_ip . ') port(' . s:server_port . ')')
+    else
+        let s:channel = ch_open(s:server_ip . ':' . s:server_port, {'callback': function('s:ch_callbakc') ,'mode': 'nl'})
+        call s:log('Client channel status:' . ch_status(s:channel))
     endif
+    call s:log('Client startting with server ip(' . s:server_ip . ') port(' . s:server_port . ')')
 endfunction
 
 let s:name = '__Chatting__'
@@ -76,7 +78,15 @@ let s:c_char = ''
 let s:c_end = ''
 let s:msg_win_opened = 0
 function! chat#chatting#OpenMsgWin() abort
-    call s:start_client()
+    if has('nvim')
+        if s:client_job_id == 0
+            call s:start_client()
+        endif
+    else
+        if !exists('s:channel') || ch_status(s:channel) !=# 'open'
+            call s:start_client()
+        endif
+    endif
     if bufwinnr(s:name) < 0
         if bufnr(s:name) != -1
             exe 'silent! botright split ' . '+b' . bufnr(s:name)
@@ -194,15 +204,12 @@ function! s:enter() abort
         let s:c_begin = ''
         return
     endif
-    if s:client_job_id == 0
-        call s:start_client()
-    endif
-    if s:client_job_id != 0
-        if has('nvim')
+    if has('nvim')
+        if s:client_job_id != 0
             call jobsend(s:client_job_id, [s:c_begin . s:c_char . s:c_end, ''])
-        elseif exists('*job#start') && !has('nvim')
-            call job#send(s:client_job_id, s:c_begin . s:c_char . s:c_end)
         endif
+    else
+        call ch_sendraw(s:channel, s:c_begin . s:c_char . s:c_end ."\n")
     endif
     let s:c_end = ''
     let s:c_char = ''
