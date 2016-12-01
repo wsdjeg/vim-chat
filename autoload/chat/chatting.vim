@@ -5,6 +5,7 @@ let s:client_job_id = 0
 let s:debug_log = []
 let s:server_ip = get(g:, 'chatting_server_ip', 'perfi.wang')
 let s:server_port = get(g:, 'chatting_server_port', 2013)
+let s:vim8_ch_waittime = get(g:, 'chatting_ch_waittime', 100)
 let s:close_windows_char = get(g:, 'chatting_close_win_char',"\<M-c>")
 let s:messages = []
 
@@ -16,7 +17,7 @@ function! s:push_message(msg) abort
             endif
         endfor
     else
-        if !empty(m)
+        if !empty(a:msg)
             call add(s:messages, a:msg)
         endif
     endif
@@ -65,7 +66,8 @@ function! s:start_client() abort
             call s:log('Server_lib:' . s:server_lib)
         endif
     else
-        let s:channel = ch_open(s:server_ip . ':' . s:server_port, {'callback': function('s:ch_callbakc') ,'mode': 'nl'})
+        let s:channel = ch_open(s:server_ip . ':' . s:server_port,
+                    \ {'callback': function('s:ch_callbakc') ,'mode': 'nl', 'waittime': s:vim8_ch_waittime})
         call s:log('Client channel status:' . ch_status(s:channel))
     endif
     call s:log('Client startting with server ip(' . s:server_ip . ') port(' . s:server_port . ')')
