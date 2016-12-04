@@ -3,6 +3,8 @@ let s:server_lib = get(g:, 'chatting_server_lib', fnamemodify('~/sources/Chattin
 let s:server_job_id = 0
 let s:client_job_id = 0
 let s:debug_log = []
+let s:current_channel = 'chatting_status'
+let s:last_channel = ''
 let s:server_ip = get(g:, 'chatting_server_ip', 'perfi.wang')
 let s:server_port = get(g:, 'chatting_server_port', 2013)
 let s:vim8_ch_waittime = get(g:, 'chatting_ch_waittime', 100)
@@ -13,13 +15,21 @@ function! s:push_message(msg) abort
     if type(a:msg) == type([])
         for m in a:msg
             if !empty(m)
-                call add(s:messages, m)
+                call s:hander_msg(m)
             endif
         endfor
     else
         if !empty(a:msg)
-            call add(s:messages, a:msg)
+            call s:hander_msg(a:msg)
         endif
+    endif
+endfunction
+
+function! s:hander_msg(msg) abort
+    let info = json_decode(a:msg)
+    call add(s:messages, info)
+    if len(info) == 2 && info[1] =~# '^join channel :'
+        let s:current_channel = substitute(info[1], '^join channel :', '', 'g')
     endif
 endfunction
 
@@ -101,6 +111,9 @@ function! chat#chatting#OpenMsgWin() abort
     call s:windowsinit()
     setl modifiable
     let s:msg_win_opened = 1
+    if !empty(s:last_channel)
+        let s:current_channel = s:last_channel
+    endif
     call s:update_msg_screen()
     call s:echon()
     while get(s:, 'quit_chating_win', 0) == 0
@@ -137,15 +150,21 @@ function! chat#chatting#OpenMsgWin() abort
     setl nomodifiable
     exe 'bd ' . bufnr(s:name)
     let s:quit_chating_win = 0
+    let s:last_channel = s:current_channel
+    let s:current_channel = ''
     let s:msg_win_opened = 0
     normal! :
 endfunction
 
 function! s:update_msg_screen() abort
-    if s:msg_win_opened
+    if s:msg_win_opened && !empty(s:current_channel)
         normal! ggdG
         for msg in s:messages
-            call append(line('$'), msg)
+            if len(msg) == 4 && msg[1] ==# s:current_channel
+                call append(line('$'), '[' . msg[0] . '] < ' . msg[2] . ' > ' . msg[3])
+            elseif len(msg) == 2 && msg[1] !~# '^join channel :'
+                call append(line('$'), '[' . msg[0] . '] ' . msg[1])
+            endif
         endfor
         normal! gg
         delete
