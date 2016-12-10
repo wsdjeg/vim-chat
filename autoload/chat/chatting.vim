@@ -124,6 +124,11 @@ function! chat#chatting#OpenMsgWin() abort
             let s:c_begin = s:c_begin . s:c_char
             let s:c_char = matchstr(s:c_end, '^.')
             let s:c_end = substitute(s:c_end, '^.', '', 'g')
+        elseif nr == 21                                                         " ctrl+u clean the message
+            let s:c_begin = ''
+        elseif nr == 11                                                         " ctrl+k delete the chars from cursor to the end
+            let s:c_char = ''
+            let s:c_end = ''
         elseif nr ==# "\<Left>"  || nr == 2                                     "<Left> 向左移动光标
             if s:c_begin !=# ''
                 let s:c_end = s:c_char . s:c_end
