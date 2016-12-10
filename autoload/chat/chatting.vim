@@ -130,6 +130,15 @@ function! chat#chatting#OpenMsgWin() abort
                 let s:c_char = matchstr(s:c_begin, '.$')
                 let s:c_begin = substitute(s:c_begin, '.$', '', 'g')
             endif
+        elseif nr ==# "\<PageUp>"
+            let l = line('.') - winheight('$')
+            if l < 0
+                exe 0
+            else
+                exe l
+            endif
+        elseif nr ==# "\<PageDown>"
+            exe line('.') + winheight('$')
         elseif nr ==# "\<Home>" || nr == 1                                     "<Home> 或 <ctrl> + a 将光标移动到行首
             let s:c_end = substitute(s:c_begin . s:c_char . s:c_end, '^.', '', 'g')
             let s:c_char = matchstr(s:c_begin, '^.')
