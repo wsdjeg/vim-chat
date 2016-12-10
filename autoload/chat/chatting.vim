@@ -118,6 +118,9 @@ function! chat#chatting#OpenMsgWin() abort
     call s:echon()
     while get(s:, 'quit_chating_win', 0) == 0
         let nr = getchar()
+        if nr !=# "\<Up>" && nr !=# "\<Down>"
+            let s:complete_input_history_num = [0,0]
+        endif
         if nr == 13
             call s:enter()
         elseif nr ==# "\<Right>" || nr == 6                                     "<Right> 向右移动光标
@@ -156,6 +159,26 @@ function! chat#chatting#OpenMsgWin() abort
             let s:quit_chating_win = 1
         elseif nr == 8 || nr ==# "\<bs>"                                        " ctrl+h or <bs> delete last char
             let s:c_begin = substitute(s:c_begin,'.$','','g')
+        elseif nr ==# "\<Up>"
+            if s:complete_input_history_num == [0,0]
+                let complete_input_history_base = s:c_begin
+                let s:c_char = ''
+                let s:c_end = ''
+            else
+                let s:c_begin = complete_input_history_base
+            endif
+            let s:complete_input_history_num[0] += 1
+            let s:c_begin = s:complete_input_history(complete_input_history_base, s:complete_input_history_num)
+        elseif nr ==# "\<Down>"
+            if s:complete_input_history_num == [0,0]
+                let complete_input_history_base = s:c_begin
+                let s:c_char = ''
+                let s:c_end = ''
+            else
+                let s:c_begin = complete_input_history_base
+            endif
+            let s:complete_input_history_num[1] += 1
+            let s:c_begin = s:complete_input_history(complete_input_history_base, s:complete_input_history_num)
         else
             let s:c_begin .= nr2char(nr)
         endif
@@ -231,6 +254,8 @@ function! s:debug() abort
     nnoremap <buffer><silent> q :bd!<CR>
 endfunction
 
+
+let s:enter_history = []
 function! s:enter() abort
     if s:c_begin . s:c_char . s:c_end ==# '/quit'
         let s:quit_chating_win = 1
@@ -246,9 +271,22 @@ function! s:enter() abort
     else
         call ch_sendraw(s:channel, s:c_begin . s:c_char . s:c_end ."\n")
     endif
+    call add(s:enter_history, s:c_begin . s:c_char . s:c_end)
     let s:c_end = ''
     let s:c_char = ''
     let s:c_begin = ''
+endfunction
+
+let s:complete_input_history_num = [0,0]
+function! s:complete_input_history(base,num) abort
+    let results = filter(copy(s:enter_history), "v:val =~# '^' . a:base")
+    if len(results) > 0
+        call add(results, a:base)
+        let index = ((len(results) - 1) - a:num[0] + a:num[1]) % len(results)
+        return results[index]
+    else
+        return a:base
+    endif
 endfunction
 
 call chat#debug#defind('chatting', function('s:debug'))
