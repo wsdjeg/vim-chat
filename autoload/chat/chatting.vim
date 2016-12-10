@@ -84,7 +84,7 @@ function! s:start_client() abort
 endfunction
 
 let s:name = '__Chatting__'
-let s:c_base = '>>>'
+let s:c_base = '>>> '
 let s:c_begin = ''
 let s:c_char = ''
 let s:c_end = ''
