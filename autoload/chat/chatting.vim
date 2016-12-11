@@ -28,8 +28,8 @@ endfunction
 function! s:hander_msg(msg) abort
     let info = json_decode(a:msg)
     call add(s:messages, info)
-    if len(info) == 2 && info[1] =~# '^join channel :'
-        let s:current_channel = substitute(info[1], '^join channel :', '', 'g')
+    if info['type'] ==# 'info_message' && info['context'] =~# '^join channel :'
+        let s:current_channel = substitute(info['context'], '^join channel :', '', 'g')
     endif
 endfunction
 
@@ -197,10 +197,10 @@ function! s:update_msg_screen() abort
     if s:msg_win_opened && !empty(s:current_channel)
         normal! ggdG
         for msg in s:messages
-            if len(msg) == 4 && msg[1] ==# s:current_channel
-                call append(line('$'), '[' . msg[0] . '] < ' . msg[2] . ' > ' . msg[3])
-            elseif len(msg) == 2 && msg[1] !~# '^join channel :'
-                call append(line('$'), '[' . msg[0] . '] ' . msg[1])
+            if msg['type'] ==# 'group_message' && msg['group_name'] ==# s:current_channel
+                call append(line('$'), '[' . msg['time'] . '] < ' . msg['sendder'] . ' > ' . msg['context'])
+            elseif msg['type'] ==# 'info_message' && msg['context'] !~# '^join channel :'
+                call append(line('$'), '[' . msg['time'] . '] ' . msg['context'])
             endif
         endfor
         normal! gg
