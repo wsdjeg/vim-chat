@@ -10,6 +10,9 @@ let s:server_port = get(g:, 'chatting_server_port', 2013)
 let s:vim8_ch_waittime = get(g:, 'chatting_ch_waittime', 100)
 let s:close_windows_char = get(g:, 'chatting_close_win_char',"\<M-c>")
 let s:messages = []
+let s:opened_channels = []
+let s:unread_msg_num = {}
+let s:st_sep = ''
 
 function! s:push_message(msg) abort
     if type(a:msg) == type([])
@@ -30,7 +33,22 @@ function! s:hander_msg(msg) abort
     call add(s:messages, info)
     if info['type'] ==# 'info_message' && info['context'] =~# '^join channel :'
         let s:current_channel = substitute(info['context'], '^join channel :', '', 'g')
+        if index(s:opened_channels, s:current_channel) == -1
+            call add(s:opened_channels, s:current_channel)
+        endif
     endif
+    if info['type'] ==# 'group_message'
+        let n = get(s:unread_msg_num, info['group_name'], 0)
+        let n += 1
+        if has_key(s:unread_msg_num, info['group_name'])
+            call remove(s:unread_msg_num, info['group_name'])
+        endif
+        call extend(s:unread_msg_num, {info['group_name'] : n})
+        if s:current_channel !=# ''
+            call s:update_statusline()
+        endif
+    endif
+
 endfunction
 
 function! chat#chatting#start() abort
@@ -109,6 +127,7 @@ function! chat#chatting#OpenMsgWin() abort
         exec bufwinnr(s:name) . 'wincmd w'
     endif
     call s:windowsinit()
+    call s:init_hi()
     setl modifiable
     let s:msg_win_opened = 1
     if !empty(s:last_channel)
@@ -287,6 +306,90 @@ function! s:complete_input_history(base,num) abort
     else
         return a:base
     endif
+endfunction
+
+function! s:init_hi() abort
+    if get(s:, 'init_hi_done', 0) == 0
+        " current channel
+        hi! ChattingHI1 ctermbg=003 ctermfg=Black guibg=#fabd2f guifg=#282828
+        " channel with new msg
+        hi! ChattingHI2 ctermbg=005 ctermfg=Black guibg=#b16286 guifg=#282828
+        " normal channel
+        hi! ChattingHI3 ctermbg=007 ctermfg=Black guibg=#8ec07c guifg=#282828
+        " end
+        hi! ChattingHI4 ctermbg=243 guibg=#7c6f64
+        " current channel + end
+        hi! ChattingHI5 guibg=#7c6f64 guifg=#fabd2f
+        " current channel + new msg channel
+        hi! ChattingHI6 guibg=#b16286 guifg=#fabd2f
+        " current channel + normal channel
+        hi! ChattingHI7 guibg=#8ec07c guifg=#fabd2f
+        " new msg channel + end
+        hi! ChattingHI8 guibg=#7c6f64 guifg=#b16286
+        " new msg channel + current channel
+        hi! ChattingHI9 guibg=#fabd2f guifg=#b16286
+        " new msg channel + normal channel
+        hi! ChattingHI10 guibg=#8ec07c guifg=#b16286
+        " new msg channel + new msg channel
+        hi! ChattingHI11 guibg=#b16286 guifg=#b16286
+        " normal channel + end
+        hi! ChattingHI12 guibg=#7c6f64 guifg=#8ec07c
+        " normal channel + normal channel
+        hi! ChattingHI13 guibg=#8ec07c guifg=#8ec07c
+        " normal channel + new msg channel
+        hi! ChattingHI14 guibg=#b16286 guifg=#8ec07c
+        " normal channel + current channel
+        hi! ChattingHI15 guibg=#fabd2f guifg=#8ec07c
+        let s:init_hi_done = 1
+    endif
+endfunction
+function! s:update_statusline() abort
+    let st = ''
+    for ch in s:opened_channels
+        let ch = substitute(ch, ' ', '\ ', 'g')
+        if ch == s:current_channel
+            if has_key(s:unread_msg_num, s:current_channel)
+                call remove(s:unread_msg_num, s:current_channel)
+            endif
+            let st .= '%#ChattingHI1#[' . ch . ']'
+            if index(s:opened_channels, ch) == len(s:opened_channels) - 1
+                let st .= '%#ChattingHI5#' . s:st_sep
+            elseif get(s:unread_msg_num, s:opened_channels[index(s:opened_channels, ch) + 1], 0) > 0
+                let st .= '%#ChattingHI6#' . s:st_sep
+            else
+                let st .= '%#ChattingHI7#' . s:st_sep
+            endif
+        else
+            let n = get(s:unread_msg_num, ch, 0)
+            if n > 0
+                let st .= '%#ChattingHI2#[' . ch . '(' . n . 'new)]'
+                if index(s:opened_channels, ch) == len(s:opened_channels) - 1
+                    let st .= '%#ChattingHI8#' . s:st_sep
+                elseif get(s:unread_msg_num, s:opened_channels[index(s:opened_channels, ch) + 1], 0) > 0
+                            \ && s:opened_channels[index(s:opened_channels, ch) + 1] !=# s:current_channel
+                    let st .= '%#ChattingHI11#' . s:st_sep
+                elseif s:opened_channels[index(s:opened_channels, ch) + 1] ==# s:current_channel
+                    let st .= '%#ChattingHI9#' . s:st_sep
+                else
+                    let st .= '%#ChattingHI10#' . s:st_sep
+                endif
+            else
+                let st .= '%#ChattingHI3#[' . ch . ']'
+                if index(s:opened_channels, ch) == len(s:opened_channels) - 1
+                    let st .= '%#ChattingHI12#' . s:st_sep
+                elseif get(s:unread_msg_num, s:opened_channels[index(s:opened_channels, ch) + 1], 0) > 0
+                            \ && s:opened_channels[index(s:opened_channels, ch) + 1] !=# s:current_channel
+                    let st .= '%#ChattingHI14#' . s:st_sep
+                elseif s:opened_channels[index(s:opened_channels, ch) + 1] ==# s:current_channel
+                    let st .= '%#ChattingHI15#' . s:st_sep
+                else
+                    let st .= '%#ChattingHI13#' . s:st_sep
+                endif
+            endif
+        endif
+    endfor
+    let st .= '%#ChattingHI4# '
+    exe 'set statusline=' . st
 endfunction
 
 call chat#debug#defind('chatting', function('s:debug'))
