@@ -3,7 +3,7 @@ let s:server_lib = get(g:, 'chatting_server_lib', fnamemodify('~/sources/Chattin
 let s:server_job_id = 0
 let s:client_job_id = 0
 let s:debug_log = []
-let s:current_channel = 'chatting_status'
+let s:current_channel = ''
 let s:last_channel = ''
 let s:server_ip = get(g:, 'chatting_server_ip', 'perfi.wang')
 let s:server_port = get(g:, 'chatting_server_port', 2013)
@@ -213,7 +213,7 @@ function! chat#chatting#OpenMsgWin() abort
 endfunction
 
 function! s:update_msg_screen() abort
-    if s:msg_win_opened && !empty(s:current_channel)
+    if s:msg_win_opened
         normal! ggdG
         for msg in s:messages
             if msg['type'] ==# 'group_message' && msg['group_name'] ==# s:current_channel
