@@ -36,6 +36,9 @@ function! s:hander_msg(msg) abort
         if index(s:opened_channels, s:current_channel) == -1
             call add(s:opened_channels, s:current_channel)
         endif
+        if s:current_channel !=# ''
+            call s:update_statusline()
+        endif
     endif
     if info['type'] ==# 'group_message'
         let n = get(s:unread_msg_num, info['group_name'], 0)
