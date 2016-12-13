@@ -31,16 +31,15 @@ endfunction
 function! s:hander_msg(msg) abort
     let info = json_decode(a:msg)
     call add(s:messages, info)
-    if info['type'] ==# 'info_message' && info['context'] =~# '^join channel :'
-        let s:current_channel = substitute(info['context'], '^join channel :', '', 'g')
+    if info['type'] ==# 'onWindowChange'
+        let s:current_channel = info['name']
         if index(s:opened_channels, s:current_channel) == -1
             call add(s:opened_channels, s:current_channel)
         endif
         if s:current_channel !=# ''
             call s:update_statusline()
         endif
-    endif
-    if info['type'] ==# 'group_message'
+    elseif info['type'] ==# 'group_message'
         let n = get(s:unread_msg_num, info['group_name'], 0)
         let n += 1
         if has_key(s:unread_msg_num, info['group_name'])
@@ -223,6 +222,8 @@ function! s:update_msg_screen() abort
                 call append(line('$'), '[' . msg['time'] . '] < ' . msg['sendder'] . ' > ' . msg['context'])
             elseif msg['type'] ==# 'info_message' && msg['context'] !~# '^join channel :'
                 call append(line('$'), '[' . msg['time'] . '] ' . msg['context'])
+            elseif msg['type'] ==# 'user_message' && msg['sendder'] ==# s:current_channel
+                call append(line('$'), '[' . msg['time'] . '] < ' . msg['sendder'] . ' > ' . msg['context'])
             endif
         endfor
         normal! gg
