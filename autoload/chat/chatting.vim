@@ -1,5 +1,6 @@
 scriptencoding utf-8
 let s:server_lib = get(g:, 'chatting_server_lib', fnamemodify('~/sources/Chatting/target/Chatting-1.0-SNAPSHOT.jar', ':p'))
+let s:login_user = ''
 let s:server_job_id = 0
 let s:client_job_id = 0
 let s:debug_log = []
@@ -48,6 +49,10 @@ function! s:hander_msg(msg) abort
         call extend(s:unread_msg_num, {info['group_name'] : n})
         if s:current_channel !=# ''
             call s:update_statusline()
+        endif
+    elseif info['type'] ==# 'info_message'
+        if info['context'] =~# 'you are logined as '
+            let s:login_user = substitute(info['context'], 'you are logined as ', '', 'g')
         endif
     endif
 
@@ -222,7 +227,12 @@ function! s:update_msg_screen() abort
                 call append(line('$'), '[' . msg['time'] . '] < ' . msg['sendder'] . ' > ' . msg['context'])
             elseif msg['type'] ==# 'info_message' && msg['context'] !~# '^join channel :'
                 call append(line('$'), '[' . msg['time'] . '] ' . msg['context'])
-            elseif msg['type'] ==# 'user_message' && msg['sendder'] ==# s:current_channel
+            elseif msg['type'] ==# 'user_message' 
+                        \ && (
+                            \ msg['sendder'] ==# s:current_channel 
+                            \ || 
+                            \ (msg['sendder'] ==# s:login_user && msg['receiver'] ==# s:current_channel)
+                        \ )
                 call append(line('$'), '[' . msg['time'] . '] < ' . msg['sendder'] . ' > ' . msg['context'])
             endif
         endfor
