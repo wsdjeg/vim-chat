@@ -172,6 +172,12 @@ function! chat#chatting#OpenMsgWin() abort
         elseif nr == 11                                                         " ctrl+k delete the chars from cursor to the end
             let s:c_char = ''
             let s:c_end = ''
+        elseif nr ==# "\<M-Left>" || nr ==# "\<M-h>"
+            "<Alt>+<Left> 移动到左边一个聊天窗口
+            call s:previous_channel()
+        elseif nr ==# "\<M-Right>" || nr ==# "\<M-l>"
+            "<Alt>+<Right> 移动到右边一个聊天窗口
+            call s:next_channel()
         elseif nr ==# "\<Left>"  || nr == 2                                     "<Left> 向左移动光标
             if s:c_begin !=# ''
                 let s:c_end = s:c_char . s:c_end
@@ -431,6 +437,49 @@ function! s:update_statusline() abort
     endfor
     let st .= '%#ChattingHI4# '
     exe 'set statusline=' . st
+endfunction
+
+function! s:previous_channel() abort
+    let id = index(s:opened_channels, s:current_channel)
+    let id -= 1
+    if id < 0
+        let id = id + len(s:opened_channels)
+    endif
+    let s:current_channel = s:opened_channels[id]
+    if s:current_channel =~# '^#'
+        call s:send('/join ' . s:current_channel)
+    else
+        call s:send('/query ' . s:current_channel)
+    endif
+    call s:update_msg_screen()
+    call s:update_statusline()
+endfunction
+
+function! s:next_channel() abort
+    let id = index(s:opened_channels, s:current_channel)
+    let id += 1
+    if id > len(s:opened_channels) - 1
+        let id = id - len(s:opened_channels)
+    endif
+    let s:current_channel = s:opened_channels[id]
+    if s:current_channel =~# '^#'
+        call s:send('/join ' . s:current_channel)
+    else
+        call s:send('/query ' . s:current_channel)
+    endif
+    call s:update_msg_screen()
+    call s:update_statusline()
+    
+endfunction
+
+function! s:send(msg) abort
+    if has('nvim')
+        if s:client_job_id != 0
+            call jobsend(s:client_job_id, [a:msg, ''])
+        endif
+    else
+        call ch_sendraw(s:channel, a:msg ."\n")
+    endif
 endfunction
 
 call chat#debug#defind('chatting', function('s:debug'))
