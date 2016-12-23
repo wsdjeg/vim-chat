@@ -4,6 +4,7 @@ let s:login_user = ''
 let s:server_job_id = 0
 let s:client_job_id = 0
 let s:debug_log = []
+let s:chatting_commands = []
 let s:current_channel = ''
 let s:last_channel = ''
 let s:server_ip = get(g:, 'chatting_server_ip', 'perfi.wang')
@@ -54,6 +55,8 @@ function! s:hander_msg(msg) abort
         if info['context'] =~# 'you are logined as '
             let s:login_user = substitute(info['context'], 'you are logined as ', '', 'g')
         endif
+    elseif info['type'] ==# 'onGetConnection'
+        let s:chatting_commands = split(info['commands'], ',')
     endif
 
 endfunction
@@ -147,6 +150,9 @@ function! chat#chatting#OpenMsgWin() abort
         if nr !=# "\<Up>" && nr !=# "\<Down>"
             let s:complete_input_history_num = [0,0]
         endif
+        if nr != 9
+            let s:complete_num = 0
+        endif
         if nr == 13
             call s:enter()
         elseif nr ==# "\<Right>" || nr == 6                                     "<Right> 向右移动光标
@@ -155,6 +161,14 @@ function! chat#chatting#OpenMsgWin() abort
             let s:c_end = substitute(s:c_end, '^.', '', 'g')
         elseif nr == 21                                                         " ctrl+u clean the message
             let s:c_begin = ''
+        elseif nr == 9                                                          " use <tab> complete str
+            if s:complete_num == 0
+                let complete_base = s:c_begin
+            else
+                let s:c_begin = complete_base
+            endif
+            let s:c_begin = s:complete(complete_base, s:complete_num)
+            let s:complete_num += 1
         elseif nr == 11                                                         " ctrl+k delete the chars from cursor to the end
             let s:c_char = ''
             let s:c_end = ''
@@ -271,6 +285,7 @@ fu! s:windowsinit() abort
     setl textwidth=0
     setl nospell
     setl nofoldenable
+    setl cursorline
 endf
 
 function! s:log(msg) abort
@@ -310,6 +325,18 @@ function! s:enter() abort
     let s:c_begin = ''
 endfunction
 
+let s:complete_num = 0
+function! s:complete(base,num) abort
+    if a:base =~# '^/[a-z]*$'
+        let rsl = filter(copy(s:chatting_commands), "v:val =~# a:base .'[^\ .]*'")
+        if len(rsl) > 0
+            return rsl[a:num % len(rsl)] . ' '
+        endif
+    endif
+
+    return a:base
+    
+endfunction
 let s:complete_input_history_num = [0,0]
 function! s:complete_input_history(base,num) abort
     let results = filter(copy(s:enter_history), "v:val =~# '^' . a:base")
