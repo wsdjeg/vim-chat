@@ -107,7 +107,7 @@ endfunction
 
 function! s:feh_code(png) abort
     call s:stop_feh()
-    let s:feh_code_id = s:jobstart(['feh', a:png])
+    let s:feh_code_id = s:jobstart(['feh', '--title', 'webqqcode', a:png])
 endfunction
 
 function! s:stop_feh() abort
@@ -143,8 +143,10 @@ function! s:handler_stdout_data(data) abort
         call add(s:server_log, a:data)
     endif
     if match(a:data, '二维码已下载到本地\[ /tmp/mojo_webqq_qrcode_') != -1
-        let png = matchstr(a:data, '/tmp/mojo_webqq_qrcode_\d*.png')
-        call s:feh_code(png)
+        let png = matchstr(a:data, '/tmp/mojo_webqq_qrcode_default.png')
+        if !empty(png)
+            call s:feh_code(png)
+        endif
     elseif matchstr(a:data, '帐号(\d*)登录成功') !=# ''
         call s:stop_feh()
     elseif matchstr(a:data,'频道\ #.*\ 已创建') !=# ''
