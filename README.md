@@ -19,6 +19,8 @@ now you can chatting with me by `call chat#chatting#OpenMsgWin()`, insert `/help
 - IRC 依赖模块: `cpanm -v Mojo::IRC::Server::Chinese`, 详见： [irc.md](https://github.com/sjdy521/Mojo-Webqq/blob/master/IRC.md)
 - [irssi](https://irssi.org/): irc 聊天客户端
 - [feh](https://feh.finalrewind.org/): 图片查看器，用于打开二维码
+- [neovim](https://github.com/neovim/neovim)： vim8 的异步存在[问题](https://github.com/vim/vim/issues/1198)，无法实现相应功能，故只能在neovim下使用
+- Linux: 目前仅在Linux下测试成功， Windows 下请直接使用QQ客户端
 
 #### 启动
 
