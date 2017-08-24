@@ -1,8 +1,16 @@
 scriptencoding utf-8
 let s:save_cpo = &cpoptions
 set cpoptions&vim
-" Debug
+
 let s:server_log = []
+
+function! s:check_executable(exe) abort
+    if !executable(a:exe)
+        echohl WarningMsg
+        echo 'vim-chat need ' . a:exe . ' in your PATH'
+        echohl None
+    endif
+endfunction
 
 let s:run_script = "
             \ use Mojo::Webqq;\n
@@ -277,6 +285,9 @@ function! s:start_handler(id, data, event) abort
 endfunction
 
 function! chat#qq#start() abort
+    call s:check_executable('feh')
+    call s:check_executable('irssi')
+    call s:check_executable('perl')
     let argv = ['perl', '-e', s:run_script]
     if s:run_job_id == 0
         let s:run_job_id = s:jobstart(argv, {
@@ -284,6 +295,13 @@ function! chat#qq#start() abort
                     \ 'on_stderr': function('s:start_handler'),
                     \ 'on_exit': function('s:start_handler'),
                     \ })
+        if s:run_job_id != 0
+            echo 'qq server has been started!'
+        else
+            echo 'failed to start qq server!'
+        endif
+    else
+        echo 'qq server has been started!'
     endif
 endfunction
 
@@ -302,6 +320,12 @@ let s:c_begin = ''
 let s:c_char = ''
 let s:c_end = ''
 function! chat#qq#OpenMsgWin() abort
+    if s:run_job_id == 0
+        echohl WarningMsg
+        echo "qq server has not beed started, please use ':call chat#qq#start()'"
+        echohl NONE
+        return
+    endif
     if bufwinnr('s:name') < 0
         if bufnr('s:name') != -1
             exe 'silent! botright split ' . '+b' . bufnr(s:name)
