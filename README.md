@@ -4,7 +4,7 @@ chat in neovim and vim8
 
 
 ### Install
-
+❌
 ```viml
 call dein#add('wsdjeg/vim-chat')
 ```
