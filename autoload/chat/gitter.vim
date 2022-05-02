@@ -6,11 +6,14 @@
 " License: GPLv3
 "=============================================================================
 
+if exists('s:room_jobs')
+  finish
+endif
+
+
 let s:JOB = SpaceVim#api#import('job')
 let s:JSON = SpaceVim#api#import('data#json')
 let s:LOG = SpaceVim#logger#derive('gitter')
-
-let s:room = ''
 
 let g:chat_gitter_token = get(g:, 'chat_gitter_token', '')
 
@@ -223,4 +226,14 @@ function! chat#gitter#send(room, msg) abort
         \ s:JSON.json_encode({'text' : a:msg})
         \ ]
   call s:JOB.start(cmd)
+endfunction
+
+function! chat#gitter#get_user_count(room) abort
+  let room = filter(deepcopy(s:channels), 'has_key(v:val, "uri") && v:val.uri ==# a:room')
+  if !empty(room)
+    return room[0].userCount . ' PEOPLE'
+  else
+    return ''
+  endif
+
 endfunction
