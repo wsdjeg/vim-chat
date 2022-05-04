@@ -22,7 +22,7 @@ If you are SpaceVim user, just load the [chat](https://spacevim.org/layers/chat/
 
 The default key binding in SpaceVim is `SPC a h`.
 
-Of cause you can install this standalone plugin with vim-plug:
+Of course you can install this standalone plugin with vim-plug:
 
 ```
 Plug 'wsdjeg/vim-chat'
